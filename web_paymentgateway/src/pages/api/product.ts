@@ -1,4 +1,6 @@
 // pages/api/product.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createRouter } from 'next-connect';
 import multer from 'multer';
