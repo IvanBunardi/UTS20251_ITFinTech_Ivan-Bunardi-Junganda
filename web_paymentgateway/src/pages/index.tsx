@@ -19,7 +19,7 @@ export default function HomePage() {
           <div className="bg-white shadow-lg rounded-2xl p-8 w-64 flex flex-col items-center">
             <h2 className="text-xl font-semibold mb-4 text-blue-600">Admin</h2>
             <p className="text-gray-600 text-center mb-6">
-              Kelola produk, pantau pembayaran, dan kontrol sistem.
+              Untuk Tambah Produk.
             </p>
             <button
               onClick={() => router.push('/admin')}
@@ -33,7 +33,7 @@ export default function HomePage() {
           <div className="bg-white shadow-lg rounded-2xl p-8 w-64 flex flex-col items-center">
             <h2 className="text-xl font-semibold mb-4 text-green-600">User</h2>
             <p className="text-gray-600 text-center mb-6">
-              Belanja produk, lakukan checkout, dan bayar via Xendit.
+              Belanja produk, lakukan checkout, dan bayar pakai Xendit.
             </p>
             <button
               onClick={() => router.push('/selectitem')}

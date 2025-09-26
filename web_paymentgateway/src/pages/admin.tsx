@@ -58,14 +58,20 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border rounded-lg"
               required
             />
-            <input
-              type="text"
-              placeholder="Kategori"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-              required
-            />
+            <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg"
+                required
+                >
+                <option value="">Pilih Kategori</option>
+                <option value="Drinks">Drinks</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Food">Food</option>
+                <option value="Clothes">Clothes</option>
+                <option value="Bundle">Bundle</option>
+            </select>
+
             <input
               type="number"
               placeholder="Harga Produk"

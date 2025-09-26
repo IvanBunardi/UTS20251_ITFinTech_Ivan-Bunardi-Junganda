@@ -8,6 +8,8 @@ export async function createInvoice(externalId: string, email: string, amount: n
     description,
     callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhook`,
     success_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+    failure_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/fail`,
+    invoice_duration: 30 * 60, // 30 menit dalam detik
   };
 
   const res = await fetch('https://api.xendit.co/v2/invoices', {

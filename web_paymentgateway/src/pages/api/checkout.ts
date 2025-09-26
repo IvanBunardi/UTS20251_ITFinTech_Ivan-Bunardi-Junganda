@@ -39,6 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     description: `Pembayaran order ${checkout._id}`,
     successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
     failureRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/fail`,
+    invoiceDuration: 30 * 60,
   }
 });
 
@@ -47,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await Checkout.findByIdAndUpdate(checkout._id, {
       xenditInvoiceId: resp.id,
-      invoiceUrl: resp.invoiceUrl, // cek naming bisa resp.invoice_url juga
+      invoiceUrl: resp.invoiceUrl,
       status: resp.status || 'PENDING'
     });
 
