@@ -15,7 +15,9 @@
     "dotenv": "^17.2.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.2",
+    "multer": "^2.0.2",
     "next": "^15.5.4",
+    "next-connect": "^1.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "xendit-node": "^7.0.0"
@@ -23,6 +25,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

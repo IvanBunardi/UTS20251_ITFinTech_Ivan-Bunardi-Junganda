@@ -1,32 +1,84 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createRouter } from 'next-connect';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 import dbConnect from '../../../lib/mongodb';
 import Product from '../../../models/Product';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("API /products dipanggil:", req.method);
-  console.log("API HIT:", req.method);
-  await dbConnect();
+// Nonaktifkan bodyParser Next.js agar multer bisa jalan
+export const config = { api: { bodyParser: false } };
 
+// Buat folder uploads jika belum ada
+const uploadDir = path.join(process.cwd(), 'public/uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Setup multer
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
+const upload = multer({ storage });
+
+// Tipe request dengan file
+interface NextApiRequestWithFile extends NextApiRequest {
+  file?: Express.Multer.File;
+}
+
+// Handler next-connect
+const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
+
+// Middleware multer (pakai any untuk menghindari type error)
+router.use((upload.single('image') as any));
+
+// POST → tambah produk
+router.post(async (req, res) => {
   try {
-    if (req.method === 'GET') {
-      const products = await Product.find({});
-      return res.status(200).json(products);
-    } 
-    
-    if (req.method === 'POST') {
-      const { name, category, price, imageUrl } = req.body;
-      if (!name || !category || !price) {
-        return res.status(400).json({ error: 'name, category, price wajib diisi' });
-      }
+    await dbConnect();
+    const { name, category, price, description } = req.body;
 
-      const p = await Product.create({ name, category, price, imageUrl });
-      return res.status(201).json(p);
+    if (!name || !category || !price || !description) {
+      return res.status(400).json({
+        error: 'name, category, price, description wajib diisi',
+      });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
+    const product = await Product.create({
+      name,
+      category,
+      price: Number(price),
+      description,
+      imageUrl,
+    });
+
+    return res.status(201).json(product);
   } catch (err) {
-    console.error('API /products error:', err);
+    console.error('POST /api/product error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// GET → ambil semua produk
+router.get(async (req, res) => {
+  try {
+    await dbConnect();
+    const products = await Product.find({});
+    return res.status(200).json(products);
+  } catch (err) {
+    console.error('GET /api/product error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Next.js API route harus default export function
+export default async function handler(
+  req: NextApiRequestWithFile,
+  res: NextApiResponse
+) {
+  await router.run(req, res);
 }

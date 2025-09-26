@@ -5,16 +5,24 @@ export default function AdminPage() {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [price, setPrice] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [description, setDescription] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [message, setMessage] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const formData = new FormData()
+    formData.append('name', name)
+    formData.append('category', category)
+    formData.append('price', price)
+    formData.append('description', description)
+    if (imageFile) formData.append('image', imageFile)
+
     const res = await fetch('/api/product', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, category, price, imageUrl }),
+      body: formData,
     })
 
     if (res.ok) {
@@ -22,7 +30,8 @@ export default function AdminPage() {
       setName('')
       setCategory('')
       setPrice('')
-      setImageUrl('')
+      setDescription('')
+      setImageFile(null)
     } else {
       const err = await res.json()
       setMessage(`Gagal menambahkan produk: ${err.error || 'unknown error'}`)
@@ -58,18 +67,19 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border rounded-lg"
               required
             />
+
             <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-                required
-                >
-                <option value="">Pilih Kategori</option>
-                <option value="Drinks">Drinks</option>
-                <option value="Snacks">Snacks</option>
-                <option value="Food">Food</option>
-                <option value="Clothes">Clothes</option>
-                <option value="Bundle">Bundle</option>
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg"
+              required
+            >
+              <option value="">Pilih Kategori</option>
+              <option value="Drinks">Drinks</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Food">Food</option>
+              <option value="Clothes">Clothes</option>
+              <option value="Bundle">Bundle</option>
             </select>
 
             <input
@@ -80,13 +90,41 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border rounded-lg"
               required
             />
-            <input
-              type="text"
-              placeholder="Image URL (opsional)"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+
+            <textarea
+              placeholder="Deskripsi Produk"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg"
+              rows={3}
+              required
             />
+
+            {/* Custom file input */}
+            <div className="w-full">
+              <label className="block">
+                <span className="sr-only">Pilih Gambar Produk</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setImageFile(e.target.files ? e.target.files[0] : null)
+                  }
+                  className="hidden"
+                  id="imageFileInput"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.getElementById('imageFileInput')?.click()
+                  }
+                  className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition"
+                >
+                  {imageFile ? imageFile.name : 'Pilih Gambar'}
+                </button>
+              </label>
+            </div>
+
             <button
               type="submit"
               className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"

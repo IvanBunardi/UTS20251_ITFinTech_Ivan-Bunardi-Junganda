@@ -7,6 +7,7 @@ interface Product {
   name: string;
   category: string;
   price: number;
+  description: string;
   imageUrl?: string;
   qty?: number;
 }
@@ -56,7 +57,7 @@ export default function UserPage() {
       {/* Overlay kalau sidebar terbuka */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-20"
+          className="fixed inset-0 backdrop-blur-sm z-20"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -157,13 +158,14 @@ export default function UserPage() {
 
             {/* Info produk */}
             <div className="flex-1">
-              <h3 className="font-semibold">{p.name}</h3>
-              <p className="text-gray-500 text-sm">
-            Rp {p.price.toLocaleString("id-ID")}
+            <h3 className="font-semibold">{p.name}</h3>
+            <p className="text-gray-500 text-sm">
+                Rp {p.price.toLocaleString("id-ID")}
             </p>
 
-              <p className="text-gray-400 text-xs">Short description</p>
+            <p className="text-gray-400 text-xs">{p.description || "No description"}</p>
             </div>
+
 
             {/* Tombol Add atau Counter */}
             {cart.find((item) => item._id === p._id) ? (
