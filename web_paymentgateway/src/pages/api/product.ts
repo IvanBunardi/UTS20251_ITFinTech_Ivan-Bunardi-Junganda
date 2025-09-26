@@ -1,3 +1,4 @@
+// pages/api/product.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createRouter } from 'next-connect';
 import multer from 'multer';
@@ -21,6 +22,7 @@ const storage = multer.diskStorage({
     cb(null, uniqueName);
   },
 });
+
 const upload = multer({ storage });
 
 // Tipe request dengan file
@@ -28,17 +30,30 @@ interface NextApiRequestWithFile extends NextApiRequest {
   file?: Express.Multer.File;
 }
 
-// Handler next-connect
-const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
+// Wrapper middleware multer untuk next-connect agar tipe kompatibel
+const runMiddleware = (req: NextApiRequest, res: NextApiResponse, fn: any) =>
+  new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) reject(result);
+      else resolve(result);
+    });
+  });
 
-// Middleware multer (pakai any untuk menghindari type error)
-router.use((upload.single('image') as any));
+const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
 
 // POST → tambah produk
 router.post(async (req, res) => {
+  // jalankan multer middleware
+  await runMiddleware(req, res, upload.single('image'));
+
   try {
     await dbConnect();
-    const { name, category, price, description } = req.body;
+    const { name, category, price, description } = req.body as {
+      name?: string;
+      category?: string;
+      price?: string;
+      description?: string;
+    };
 
     if (!name || !category || !price || !description) {
       return res.status(400).json({
@@ -76,9 +91,6 @@ router.get(async (req, res) => {
 });
 
 // Next.js API route harus default export function
-export default async function handler(
-  req: NextApiRequestWithFile,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequestWithFile, res: NextApiResponse) {
   await router.run(req, res);
 }
