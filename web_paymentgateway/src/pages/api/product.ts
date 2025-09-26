@@ -1,11 +1,12 @@
 // pages/api/product.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createRouter } from 'next-connect';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import fs from 'fs';
 import path from 'path';
 import dbConnect from '../../../lib/mongodb';
 import Product from '../../../models/Product';
+import type { Request, Response } from 'express';
 
 // Nonaktifkan bodyParser Next.js agar multer bisa jalan
 export const config = { api: { bodyParser: false } };
@@ -17,9 +18,8 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 // Setup multer
 const storage = multer.diskStorage({
   destination: uploadDir,
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
+  filename: (_req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
 const upload = multer({ storage });
@@ -29,21 +29,17 @@ interface NextApiRequestWithFile extends NextApiRequest {
   file?: Express.Multer.File;
 }
 
-// Helper untuk jalankan middleware multer
+// Helper untuk jalankan middleware multer dengan tipe jelas
 const runMiddleware = (
-  req: NextApiRequest,
+  req: NextApiRequestWithFile,
   res: NextApiResponse,
-  fn: (req: any, res: any, next: (err?: any) => void) => void
-) =>
-  new Promise<void>((resolve, reject) => {
-    fn(
-      req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
-      (result?: any) => {
-        if (result instanceof Error) reject(result);
-        else resolve();
-      }
-    );
+  fn: (req: Request, res: Response, next: (err?: unknown) => void) => void
+): Promise<void> =>
+  new Promise((resolve, reject) => {
+    fn(req as unknown as Request, res as unknown as Response, (err?: unknown) => {
+      if (err) reject(err);
+      else resolve();
+    });
   });
 
 // Buat router
@@ -51,7 +47,6 @@ const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
 
 // POST → tambah produk
 router.post(async (req, res) => {
-  // Jalankan multer middleware
   await runMiddleware(req, res, upload.single('image'));
 
   try {
@@ -88,7 +83,7 @@ router.post(async (req, res) => {
 });
 
 // GET → ambil semua produk
-router.get(async (req, res) => {
+router.get(async (_req, res) => {
   try {
     await dbConnect();
     const products = await Product.find({});
