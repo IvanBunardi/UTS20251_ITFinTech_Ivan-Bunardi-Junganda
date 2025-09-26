@@ -1,12 +1,12 @@
 // pages/api/product.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createRouter } from 'next-connect';
-import multer, { FileFilterCallback } from 'multer';
+import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import dbConnect from '../../../lib/mongodb';
 import Product from '../../../models/Product';
-import type { Request, Response } from 'express';
+import type { RequestHandler } from 'express';
 
 // Nonaktifkan bodyParser Next.js agar multer bisa jalan
 export const config = { api: { bodyParser: false } };
@@ -29,25 +29,19 @@ interface NextApiRequestWithFile extends NextApiRequest {
   file?: Express.Multer.File;
 }
 
-// Helper untuk jalankan middleware multer dengan tipe jelas
-const runMiddleware = (
-  req: NextApiRequestWithFile,
-  res: NextApiResponse,
-  fn: (req: Request, res: Response, next: (err?: unknown) => void) => void
-): Promise<void> =>
-  new Promise((resolve, reject) => {
-    fn(req as unknown as Request, res as unknown as Response, (err?: unknown) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+// Wrapper middleware multer
+const multerMiddleware: RequestHandler = upload.single('image');
 
-// Buat router
 const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
 
 // POST → tambah produk
 router.post(async (req, res) => {
-  await runMiddleware(req, res, upload.single('image'));
+  await new Promise<void>((resolve, reject) => {
+    multerMiddleware(req as any, res as any, (err?: unknown) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 
   try {
     await dbConnect();
