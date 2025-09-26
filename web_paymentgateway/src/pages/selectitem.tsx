@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Image from 'next/image';
 
 interface Product {
   _id: string;
@@ -139,17 +140,20 @@ export default function UserPage() {
             className="bg-white rounded-lg shadow p-4 flex items-center gap-4"
           >
             {/* Gambar produk */}
-            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-              {p.imageUrl ? (
-                <img
-                  src={p.imageUrl}
-                  alt={p.name}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <span className="text-gray-400 text-sm">No Img</span>
-              )}
-            </div>
+           <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center overflow-hidden relative">
+                {p.imageUrl ? (
+                    <Image
+                    src={p.imageUrl}
+                    alt={p.name}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    />
+                ) : (
+                    <span className="text-gray-400 text-sm flex items-center justify-center w-full h-full">
+                    No Img
+                    </span>
+                )}
+                </div>
 
             {/* Info produk */}
             <div className="flex-1">

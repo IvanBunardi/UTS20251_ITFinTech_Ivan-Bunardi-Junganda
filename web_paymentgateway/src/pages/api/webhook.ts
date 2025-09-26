@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // ✅ Verifikasi token dari header webhook Xendit
   const tokenHeader =
     req.headers['x-callback-token'] ||
-    req.headers['X-Callback-Token'.toLowerCase()]; // antisipasi case mismatch
+    req.headers['X-Callback-Token'.toLowerCase()];
 
   if (!tokenHeader || tokenHeader !== process.env.XENDIT_WEBHOOK_TOKEN) {
     console.warn("❌ Invalid webhook token:", tokenHeader);

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 
 export default function SuccessPage() {
   const router = useRouter();
-  const { invoice_id, external_id, status } = router.query;
+  const { invoice_id, status } = router.query;
 
   useEffect(() => {
     if (status === "PAID") {

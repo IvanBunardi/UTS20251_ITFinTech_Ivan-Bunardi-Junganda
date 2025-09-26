@@ -63,8 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       invoiceUrl: resp.invoiceUrl,
       checkoutId: checkout._id
     });
-  } catch (err: any) {
-    console.error('❌ Error create invoice:', err.response?.data || err.message || err);
-    return res.status(500).json({ error: 'Gagal membuat invoice' });
+  } catch (err: unknown) {
+  if (err instanceof Error) {
+    console.error('❌ Error create invoice:', err.message);
+  } else {
+    console.error('❌ Unknown error:', err);
   }
+}
 }

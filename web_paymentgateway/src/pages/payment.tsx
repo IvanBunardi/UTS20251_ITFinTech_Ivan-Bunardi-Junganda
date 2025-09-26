@@ -11,7 +11,7 @@ interface Product {
 
 export default function PaymentPage() {
   const [cart, setCart] = useState<Product[]>([]);
-  const [payment, setPayment] = useState<string>("card");
+  //const [payment, setPayment] = useState<string>("card");
   const router = useRouter();
 
   useEffect(() => {

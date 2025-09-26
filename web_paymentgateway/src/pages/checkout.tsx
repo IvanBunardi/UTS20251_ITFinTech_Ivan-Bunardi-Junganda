@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Image from 'next/image';
 
 interface Product {
   _id: string;
@@ -60,17 +61,20 @@ export default function CheckoutPage() {
             className="flex items-center justify-between bg-white p-3 rounded-lg shadow"
           >
             <div className="flex items-center gap-3">
-              <div className="w-15 h-15 bg-gray-200 rounded overflow-hidden">
+              <div className="w-15 h-15 bg-gray-200 rounded overflow-hidden relative">
                 {item.imageUrl ? (
-                  <img
+                    <Image
                     src={item.imageUrl}
                     alt={item.name}
-                    className="object-cover w-full h-full"
-                  />
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    />
                 ) : (
-                  <span className="text-gray-400 text-xs">No Img</span>
+                    <span className="text-gray-400 text-xs flex items-center justify-center w-full h-full">
+                    No Img
+                    </span>
                 )}
-              </div>
+                </div>
               <div>
                 <p className="font-semibold">{item.name}</p>
                 <div className="flex items-center gap-2 mt-1">
