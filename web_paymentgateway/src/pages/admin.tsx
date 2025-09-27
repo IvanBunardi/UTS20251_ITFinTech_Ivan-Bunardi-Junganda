@@ -40,7 +40,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Header */}
       <header className="bg-white shadow-md py-4 px-8 flex items-center">
         <button
           onClick={() => router.push('/')}
@@ -100,7 +99,6 @@ export default function AdminPage() {
               required
             />
 
-            {/* Custom file input */}
             <div className="w-full">
               <label className="block">
                 <span className="sr-only">Pilih Gambar Produk</span>

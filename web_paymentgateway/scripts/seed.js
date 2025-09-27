@@ -1,14 +1,11 @@
-// scripts/seed.js
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-// pastikan load .env.local dengan path absolut
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
-// debug cepat: apakah env terbaca?
 console.log('DEBUG MONGODB_URI:', process.env.MONGODB_URI);
 
 if (!process.env.MONGODB_URI) {

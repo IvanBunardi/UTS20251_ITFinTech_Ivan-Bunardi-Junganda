@@ -41,7 +41,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ✅ Header */}
       <header className="bg-white shadow p-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
@@ -50,10 +49,9 @@ export default function CheckoutPage() {
           &lt; Back
         </button>
         <h1 className="font-bold text-lg">Checkout</h1>
-        <div className="w-12" /> {/* kosong biar teks di tengah */}
+        <div className="w-12" /> 
       </header>
 
-      {/* ✅ List cart items */}
       <div className="flex-1 p-4 flex flex-col gap-4">
         {cart.map((item) => (
           <div
@@ -102,7 +100,6 @@ export default function CheckoutPage() {
         ))}
       </div>
 
-      {/* ✅ Ringkasan */}
       <div className="bg-white p-4 rounded-t-lg shadow space-y-2">
         <div className="flex justify-between">
           <span>Subtotal</span>

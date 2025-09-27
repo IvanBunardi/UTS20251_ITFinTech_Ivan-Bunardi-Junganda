@@ -54,7 +54,6 @@ export default function UserPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
-      {/* Overlay kalau sidebar terbuka */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 backdrop-blur-sm z-20"
@@ -62,7 +61,6 @@ export default function UserPage() {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-30 transform transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -83,7 +81,6 @@ export default function UserPage() {
         </nav>
       </div>
 
-      {/* Header */}
       <header className="bg-white shadow p-4 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-4">
           <button className="p-2" onClick={() => setSidebarOpen(true)}>
@@ -116,7 +113,6 @@ export default function UserPage() {
         </button>
       </header>
 
-      {/* Filter kategori */}
       <div className="flex gap-4 px-4 py-2 overflow-x-auto">
         {categories.map((c) => (
           <button
@@ -133,14 +129,12 @@ export default function UserPage() {
         ))}
       </div>
 
-      {/* Produk list */}
       <main className="p-4 grid gap-4">
         {filteredProducts.map((p) => (
           <div
             key={p._id}
             className="bg-white rounded-lg shadow p-4 flex items-center gap-4"
           >
-            {/* Gambar produk */}
            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center overflow-hidden relative">
                 {p.imageUrl ? (
                     <Image
@@ -156,7 +150,6 @@ export default function UserPage() {
                 )}
                 </div>
 
-            {/* Info produk */}
             <div className="flex-1">
             <h3 className="font-semibold">{p.name}</h3>
             <p className="text-gray-500 text-sm">
@@ -167,7 +160,6 @@ export default function UserPage() {
             </div>
 
 
-            {/* Tombol Add atau Counter */}
             {cart.find((item) => item._id === p._id) ? (
             <div className="flex items-center gap-2">
                 <button
@@ -177,7 +169,7 @@ export default function UserPage() {
                     if (idx > -1 && c[idx].qty && c[idx].qty > 1) {
                     c[idx].qty!--;
                     } else {
-                    c.splice(idx, 1); // hapus dari cart kalau qty = 1
+                    c.splice(idx, 1); 
                     }
                     setCart(c);
                 }}

@@ -1,4 +1,3 @@
-// pages/fail.tsx
 import { useRouter } from "next/router";
 
 export default function FailPage() {
@@ -6,7 +5,6 @@ export default function FailPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      {/* Logo silang */}
       <div className="bg-red-100 rounded-full p-6 mb-6">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +22,6 @@ export default function FailPage() {
         </svg>
       </div>
 
-      {/* Teks gagal */}
       <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
         Pembayaran Gagal
       </h1>
@@ -32,7 +29,6 @@ export default function FailPage() {
         Maaf, pembayaran Anda tidak berhasil. Silakan coba lagi.
       </p>
 
-      {/* Tombol kembali ke checkout */}
       <button
         onClick={() => router.push("/checkout")}
         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"

@@ -1,4 +1,3 @@
-// pages/payment.tsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
@@ -11,7 +10,6 @@ interface Product {
 
 export default function PaymentPage() {
   const [cart, setCart] = useState<Product[]>([]);
-  //const [payment, setPayment] = useState<string>("card");
   const router = useRouter();
 
   useEffect(() => {
@@ -24,14 +22,13 @@ export default function PaymentPage() {
     (sum, item) => sum + item.price * (item.qty || 0),
     0
   );
-  const shipping = 12000; // contoh fixed shipping
-  const taxRate = 0.11; // 11% pajak
+  const shipping = 12000; 
+  const taxRate = 0.11; 
   const tax = subtotal * taxRate;
   const total = subtotal + shipping + tax;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ✅ Header */}
       <header className="bg-white shadow p-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
@@ -43,9 +40,7 @@ export default function PaymentPage() {
         <div className="w-12" />
       </header>
 
-      {/* ✅ Body */}
       <div className="flex-1 p-4 space-y-6">
-        {/* Shipping Address */}
         <div>
           <h2 className="font-semibold mb-2">Shipping Address</h2>
           <div className="space-y-2">
@@ -77,7 +72,6 @@ export default function PaymentPage() {
           </div>
         </div>
 
-        {/* Order Summary */}
         <div className="bg-white p-4 rounded-lg shadow space-y-2">
           <h2 className="font-semibold mb-2">Order Summary</h2>
           <div className="flex justify-between">
@@ -99,7 +93,6 @@ export default function PaymentPage() {
         </div>
       </div>
 
-      {/* ✅ Confirm Button */}
       <div className="p-4 bg-white border-t">
         <button
           onClick={async () => {

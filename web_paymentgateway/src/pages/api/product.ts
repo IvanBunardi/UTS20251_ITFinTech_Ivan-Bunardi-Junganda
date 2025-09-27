@@ -44,7 +44,6 @@ const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
 
 // POST → tambah produk
 router.post(async (req, res) => {
-  // jalankan multer
   await runMulter(req, res, upload.single("image"));
 
   try {

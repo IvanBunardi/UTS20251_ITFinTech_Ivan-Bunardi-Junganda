@@ -14,7 +14,6 @@ async function dbConnect() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(uri, {
-      // options optional
       useNewUrlParser: true,
       useUnifiedTopology: true,
     }).then(m => m);
