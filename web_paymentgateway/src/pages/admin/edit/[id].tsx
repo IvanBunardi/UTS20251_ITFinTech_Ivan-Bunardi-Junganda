@@ -24,7 +24,8 @@ export default function EditProductPage() {
   const [currentImageUrl, setCurrentImageUrl] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
-// eslint-disable-next-line react-hooks/exhaustive-deps
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (id) {
       fetchProduct()
@@ -36,7 +37,7 @@ export default function EditProductPage() {
       setLoading(true)
       const res = await fetch(`/api/product?id=${id}`)
       if (!res.ok) throw new Error('Produk tidak ditemukan')
-      
+
       const product: Product = await res.json()
       setName(product.name)
       setCategory(product.category)
@@ -60,7 +61,7 @@ export default function EditProductPage() {
     formData.append('category', category)
     formData.append('price', price)
     formData.append('description', description)
-    
+
     if (imageFile) {
       formData.append('image', imageFile)
     } else {
@@ -101,8 +102,8 @@ export default function EditProductPage() {
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Navbar */}
       <nav className="bg-white shadow-md py-4 px-8 flex items-center justify-between">
-        <button 
-          onClick={() => router.push('/admin')} 
+        <button
+          onClick={() => router.push('/admin')}
           className="text-black font-semibold hover:text-blue-700"
         >
           ← Kembali ke Admin
@@ -118,7 +119,9 @@ export default function EditProductPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Produk
+              </label>
               <input
                 type="text"
                 placeholder="Nama Produk"
@@ -130,7 +133,9 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kategori
+              </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -147,7 +152,9 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Harga</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Harga
+              </label>
               <input
                 type="number"
                 placeholder="Harga Produk"
@@ -159,7 +166,9 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Deskripsi
+              </label>
               <textarea
                 placeholder="Deskripsi Produk"
                 value={description}
@@ -169,17 +178,21 @@ export default function EditProductPage() {
                 required
               />
             </div>
-            
+
             {/* Gambar Saat Ini */}
             {currentImageUrl && !imageFile && (
               <div className="border rounded-lg p-3 bg-gray-50">
-                <p className="text-sm font-medium text-gray-700 mb-2">Gambar saat ini:</p>
-                <img 
-                  src={currentImageUrl} 
-                  alt="Current" 
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Gambar saat ini:
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentImageUrl}
+                  alt="Current"
                   className="w-full h-48 object-cover rounded"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/300x200?text=No+Image'
+                    e.currentTarget.src =
+                      'https://via.placeholder.com/300x200?text=No+Image'
                   }}
                 />
               </div>
@@ -193,11 +206,15 @@ export default function EditProductPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
+                onChange={(e) =>
+                  setImageFile(e.target.files ? e.target.files[0] : null)
+                }
                 className="w-full px-4 py-2 border rounded-lg"
               />
               {imageFile && (
-                <p className="text-sm text-green-600 mt-1">✓ File baru: {imageFile.name}</p>
+                <p className="text-sm text-green-600 mt-1">
+                  ✓ File baru: {imageFile.name}
+                </p>
               )}
             </div>
 
@@ -219,9 +236,13 @@ export default function EditProductPage() {
           </form>
 
           {message && (
-            <div className={`mt-6 text-center font-medium p-3 rounded-lg ${
-              message.includes('❌') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-            }`}>
+            <div
+              className={`mt-6 text-center font-medium p-3 rounded-lg ${
+                message.includes('❌')
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-green-100 text-green-700'
+              }`}
+            >
               {message}
             </div>
           )}

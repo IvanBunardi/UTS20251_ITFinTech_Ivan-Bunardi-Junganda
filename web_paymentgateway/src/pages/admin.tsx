@@ -1,5 +1,7 @@
 // pages/admin.tsx
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
@@ -55,11 +57,9 @@ export default function AdminPage() {
     formData.append('price', price)
     formData.append('description', description)
     
-    // Jika ada gambar baru yang dipilih
     if (imageFile) {
       formData.append('image', imageFile)
     } else if (editingId && currentImageUrl) {
-      // Jika edit dan tidak ganti gambar, kirim URL lama
       formData.append('imageUrl', currentImageUrl)
     }
 
@@ -97,8 +97,6 @@ export default function AdminPage() {
     setCurrentImageUrl(product.imageUrl)
     setImageFile(null)
     setMessage('')
-    
-    // Scroll ke form
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -130,8 +128,7 @@ export default function AdminPage() {
     setImageFile(null)
     setEditingId(null)
     setCurrentImageUrl('')
-    
-    // Reset file input
+
     const fileInput = document.getElementById('imageFileInput') as HTMLInputElement
     if (fileInput) fileInput.value = ''
   }
@@ -229,7 +226,6 @@ export default function AdminPage() {
                 required
               />
 
-              {/* Preview gambar saat ini (jika edit) */}
               {editingId && currentImageUrl && !imageFile && (
                 <div className="border rounded-lg p-2">
                   <p className="text-sm text-gray-600 mb-2">Gambar saat ini:</p>
@@ -237,7 +233,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Input file gambar */}
               <div className="w-full">
                 <label className="block">
                   <span className="text-sm text-gray-600">
@@ -250,9 +245,7 @@ export default function AdminPage() {
                     onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
                     className="w-full px-4 py-2 border rounded-lg mt-1"
                   />
-                  {imageFile && (
-                    <p className="text-sm text-green-600 mt-1">✓ {imageFile.name}</p>
-                  )}
+                  {imageFile && <p className="text-sm text-green-600 mt-1">✓ {imageFile.name}</p>}
                 </label>
               </div>
 
@@ -277,7 +270,11 @@ export default function AdminPage() {
             </form>
 
             {message && (
-              <div className={`mt-6 text-center font-medium ${message.includes('❌') ? 'text-red-600' : 'text-green-600'}`}>
+              <div
+                className={`mt-6 text-center font-medium ${
+                  message.includes('❌') ? 'text-red-600' : 'text-green-600'
+                }`}
+              >
                 {message}
               </div>
             )}

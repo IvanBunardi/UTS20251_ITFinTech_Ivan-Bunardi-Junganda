@@ -1,8 +1,14 @@
-// pages/api/order.ts
+// src/pages/api/order.ts
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @next/next/no-img-element */
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../../../lib/mongodb'
 import Order from '../../../models/Order'
 
+// 🔢 Fungsi helper untuk membuat nomor order unik
 const generateOrderNumber = () => {
   const date = new Date()
   const year = date.getFullYear().toString().slice(-2)
@@ -17,6 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { id } = req.query
 
   try {
+    // 📦 GET (ambil semua order / 1 order spesifik)
     if (req.method === 'GET') {
       if (id) {
         const order = await Order.findById(id)
@@ -28,9 +35,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // 🧾 POST (buat order baru)
     if (req.method === 'POST') {
-      const { customerName, customerPhone, customerEmail, items, totalAmount, paymentMethod, notes } = req.body
+      const {
+        customerName,
+        customerPhone,
+        customerEmail,
+        items,
+        totalAmount,
+        paymentMethod,
+        notes,
+      } = req.body
 
+      // Validasi dasar
       if (!customerName || !customerPhone || !items || !totalAmount) {
         return res.status(400).json({ error: 'Data tidak lengkap' })
       }
@@ -56,11 +73,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(201).json(newOrder)
     }
 
+    // 🪄 PUT (update order)
     if (req.method === 'PUT') {
       if (!id) return res.status(400).json({ error: 'ID order diperlukan' })
 
       const { status, paymentMethod, notes } = req.body
 
+      // Validasi status yang diizinkan
       if (status && !['waiting_payment', 'paid', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: 'Status tidak valid' })
       }
@@ -77,6 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(updatedOrder)
     }
 
+    // 🗑️ DELETE (hapus order)
     if (req.method === 'DELETE') {
       if (!id) return res.status(400).json({ error: 'ID order diperlukan' })
 
@@ -86,9 +106,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ message: 'Order berhasil dihapus' })
     }
 
+    // Jika method lain (misalnya PATCH, OPTIONS)
     return res.status(405).json({ error: 'Method tidak diizinkan' })
-  } catch (error: any) {
-    console.error('Order API Error:', error)
-    return res.status(500).json({ error: error.message || 'Terjadi kesalahan server' })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('❌ Order API Error:', error.message)
+      return res.status(500).json({ error: error.message })
+    } else {
+      console.error('❌ Unknown Error:', error)
+      return res.status(500).json({ error: 'Terjadi kesalahan server' })
+    }
   }
 }

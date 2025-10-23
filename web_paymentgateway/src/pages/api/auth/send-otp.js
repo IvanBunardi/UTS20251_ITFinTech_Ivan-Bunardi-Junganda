@@ -1,5 +1,5 @@
-import dbConnect from '../../../lib/mongodb';
-import User from '../../../models/User';
+import dbConnect from '../../../../lib/mongodb';
+import User from '../../../../models/User';
 import twilio from 'twilio';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
