@@ -1,4 +1,5 @@
 // pages/admin.tsx
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 

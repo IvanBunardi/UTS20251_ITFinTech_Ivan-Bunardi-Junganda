@@ -1,4 +1,5 @@
 // pages/admin/edit/[id].tsx
+// eslint-disable-next-line @next/next/no-img-element
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
@@ -23,7 +24,7 @@ export default function EditProductPage() {
   const [currentImageUrl, setCurrentImageUrl] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
-
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (id) {
       fetchProduct()
@@ -168,7 +169,7 @@ export default function EditProductPage() {
                 required
               />
             </div>
-
+            
             {/* Gambar Saat Ini */}
             {currentImageUrl && !imageFile && (
               <div className="border rounded-lg p-3 bg-gray-50">
