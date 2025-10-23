@@ -23,6 +23,7 @@
     "nodemailer": "^7.0.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "recharts": "^3.3.0",
     "twilio": "^5.10.3",
     "xendit-node": "^7.0.0"
   },
