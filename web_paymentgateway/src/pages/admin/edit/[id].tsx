@@ -1,7 +1,7 @@
-// pages/admin/edit/[id].tsx
-// eslint-disable-next-line @next/next/no-img-element
-import { useState, useEffect } from 'react'
+// src/pages/admin/edit/[id].tsx
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 
 interface Product {
   _id: string
@@ -25,14 +25,8 @@ export default function EditProductPage() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (id) {
-      fetchProduct()
-    }
-  }, [id])
-
-  const fetchProduct = async () => {
+  // ✅ useCallback agar tidak trigger infinite re-render dan fix eslint deps
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetch(`/api/product?id=${id}`)
@@ -50,7 +44,11 @@ export default function EditProductPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) fetchProduct()
+  }, [id, fetchProduct])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,7 +107,7 @@ export default function EditProductPage() {
           ← Kembali ke Admin
         </button>
         <h1 className="text-xl font-bold text-gray-800">Edit Produk</h1>
-        <div></div>
+        <div />
       </nav>
 
       {/* Form Edit */}
@@ -185,16 +183,18 @@ export default function EditProductPage() {
                 <p className="text-sm font-medium text-gray-700 mb-2">
                   Gambar saat ini:
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={currentImageUrl}
-                  alt="Current"
-                  className="w-full h-48 object-cover rounded"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      'https://via.placeholder.com/300x200?text=No+Image'
-                  }}
-                />
+                <div className="relative w-full h-48">
+                  <Image
+                    src={currentImageUrl || '/no-image.png'}
+                    alt="Current"
+                    fill
+                    className="object-cover rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = 'https://via.placeholder.com/300x200?text=No+Image'
+                    }}
+                  />
+                </div>
               </div>
             )}
 

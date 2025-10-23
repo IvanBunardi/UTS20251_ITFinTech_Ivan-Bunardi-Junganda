@@ -1,8 +1,6 @@
-// src/pages/statistik.tsx  (atau pages/admin/statistik.tsx)
 'use client'
 
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import {
   LineChart,
@@ -17,31 +15,49 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  // Note: we will import Legend but not use it directly in JSX
   Legend as RechartsLegend,
 } from 'recharts'
 
-// Wrapper untuk Legend supaya TypeScript/JSX tidak error pada recharts@3.x
-const LegendWrapper: React.FC<any> = (props) => {
-  // pakai createElement untuk melewati masalah typing di recharts v3
-  // RechartsLegend as any agar TS tidak complain
+// ✅ Legend wrapper agar tidak error di TypeScript / Recharts v3
+const LegendWrapper: React.FC<Record<string, unknown>> = (props) => {
   return React.createElement(RechartsLegend as any, props)
 }
 
-// ----------------------
-// Page component
-// ----------------------
+// ---------------------------
+// Interface Types
+// ---------------------------
+interface OrderItem {
+  name: string
+  price: number
+  quantity: number
+}
+
+interface Order {
+  _id?: string
+  createdAt: string
+  totalAmount: number
+  status: 'paid' | 'waiting_payment' | 'cancelled'
+  items: OrderItem[]
+}
+
+// ---------------------------
+// Page Component
+// ---------------------------
 export default function StatistikPage() {
-  const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+
   const router = useRouter()
   const currentPath = router.pathname
 
   useEffect(() => {
-    fetchOrders()
+    void fetchOrders()
   }, [])
 
+  // ---------------------------
+  // Fetch Orders
+  // ---------------------------
   const fetchOrders = async () => {
     try {
       setLoading(true)
@@ -50,37 +66,45 @@ export default function StatistikPage() {
       const data = await res.json()
       setOrders(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error fetching orders:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const formatRupiah = (value: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)
+  const formatRupiah = (value: number): string =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(value)
 
-  // Filter orders by date range
-  const filterOrdersByDate = () => {
+  // ---------------------------
+  // Filter Order Berdasarkan Periode
+  // ---------------------------
+  const filterOrdersByDate = (): Order[] => {
     if (dateRange === 'all') return orders
     const now = new Date()
-    const cutoffDate = new Date()
+    const cutoff = new Date()
     switch (dateRange) {
       case '7d':
-        cutoffDate.setDate(now.getDate() - 7)
+        cutoff.setDate(now.getDate() - 7)
         break
       case '30d':
-        cutoffDate.setDate(now.getDate() - 30)
+        cutoff.setDate(now.getDate() - 30)
         break
       case '90d':
-        cutoffDate.setDate(now.getDate() - 90)
+        cutoff.setDate(now.getDate() - 90)
         break
     }
-    return orders.filter((order) => new Date(order.createdAt) >= cutoffDate)
+    return orders.filter((o) => new Date(o.createdAt) >= cutoff)
   }
 
   const filteredOrders = filterOrdersByDate()
 
-  // Stats
+  // ---------------------------
+  // Statistik
+  // ---------------------------
   const paidOrders = filteredOrders.filter((o) => o.status === 'paid')
   const waitingOrders = filteredOrders.filter((o) => o.status === 'waiting_payment')
   const cancelledOrders = filteredOrders.filter((o) => o.status === 'cancelled')
@@ -92,45 +116,47 @@ export default function StatistikPage() {
     waitingOrders: waitingOrders.length,
     cancelledOrders: cancelledOrders.length,
     averageOrderValue:
-      paidOrders.length > 0 ? paidOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) / paidOrders.length : 0,
+      paidOrders.length > 0
+        ? paidOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) / paidOrders.length
+        : 0,
   }
 
-  // Daily Revenue Data (for Line Chart)
+  // ---------------------------
+  // Grafik Pendapatan Harian
+  // ---------------------------
   const getDailyRevenueData = () => {
-    const dailyData: { [key: string]: number } = {}
-
-    paidOrders.forEach((order) => {
-      // safe parsing
-      const d = new Date(order.createdAt)
+    const daily: Record<string, number> = {}
+    paidOrders.forEach((o) => {
+      const d = new Date(o.createdAt)
       if (isNaN(d.getTime())) return
       const date = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
-      dailyData[date] = (dailyData[date] || 0) + (order.totalAmount || 0)
+      daily[date] = (daily[date] || 0) + (o.totalAmount || 0)
     })
-
-    return Object.entries(dailyData)
+    return Object.entries(daily)
       .map(([date, revenue]) => ({ date, revenue }))
-      // sorting by date string may be locale-dependent, but given format 'DD MMM' it's ok for recent slice
       .slice(-14)
   }
 
-  // Top Products (for Bar Chart)
+  // ---------------------------
+  // Produk Terlaris
+  // ---------------------------
   const getTopProducts = () => {
-    const productSales: { [key: string]: { name: string; quantity: number; revenue: number } } = {}
-
+    const sales: Record<string, { name: string; quantity: number; revenue: number }> = {}
     paidOrders.forEach((order) => {
       const items = Array.isArray(order.items) ? order.items : []
-      items.forEach((item: any) => {
-        const name = item.name ?? 'Unknown'
-        if (!productSales[name]) productSales[name] = { name, quantity: 0, revenue: 0 }
-        productSales[name].quantity += item.quantity || 0
-        productSales[name].revenue += (item.price || 0) * (item.quantity || 0)
+      items.forEach((item) => {
+        const name = item.name || 'Unknown'
+        if (!sales[name]) sales[name] = { name, quantity: 0, revenue: 0 }
+        sales[name].quantity += item.quantity
+        sales[name].revenue += item.price * item.quantity
       })
     })
-
-    return Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 10)
+    return Object.values(sales).sort((a, b) => b.revenue - a.revenue).slice(0, 10)
   }
 
-  // Order Status Distribution (for Pie Chart)
+  // ---------------------------
+  // Distribusi Status Order
+  // ---------------------------
   const getOrderStatusData = () => [
     { name: 'Lunas', value: stats.paidOrders, color: '#10b981' },
     { name: 'Menunggu', value: stats.waitingOrders, color: '#f59e0b' },
@@ -141,9 +167,12 @@ export default function StatistikPage() {
   const topProductsData = getTopProducts()
   const orderStatusData = getOrderStatusData()
 
+  // ---------------------------
+  // RENDER
+  // ---------------------------
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Navigation */}
+      {/* Navbar */}
       <nav className="bg-white shadow-md py-4 px-8 flex items-center justify-between relative">
         <button onClick={() => router.push('/')} className="text-black font-semibold hover:text-blue-700">
           ← Back
@@ -182,13 +211,13 @@ export default function StatistikPage() {
       {/* Main Content */}
       <main className="flex-grow p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Date Range Filter */}
+          {/* Filter */}
           <div className="bg-white rounded-lg p-4 shadow flex items-center gap-4">
             <span className="font-medium text-gray-700">Periode:</span>
-            {['7d', '30d', '90d', 'all'].map((range) => (
+            {(['7d', '30d', '90d', 'all'] as const).map((range) => (
               <button
                 key={range}
-                onClick={() => setDateRange(range as any)}
+                onClick={() => setDateRange(range)}
                 className={`px-4 py-2 rounded-lg font-medium transition ${
                   dateRange === range ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
@@ -198,7 +227,7 @@ export default function StatistikPage() {
             ))}
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg p-6 shadow">
               <p className="text-gray-600 text-sm mb-2">Total Pendapatan</p>
@@ -224,11 +253,12 @@ export default function StatistikPage() {
             </div>
           </div>
 
+          {/* Chart Section */}
           {loading ? (
             <p className="text-center text-gray-500 py-12">⏳ Memuat data...</p>
           ) : (
             <>
-              {/* Revenue Line Chart */}
+              {/* Line Chart */}
               <div className="bg-white rounded-lg p-6 shadow">
                 <h2 className="text-xl font-bold mb-4">📈 Pendapatan Harian (14 Hari Terakhir)</h2>
                 {dailyRevenueData.length > 0 ? (
@@ -236,8 +266,8 @@ export default function StatistikPage() {
                     <LineChart data={dailyRevenueData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
-                      <YAxis tickFormatter={(value) => `Rp${(value / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                      <YAxis tickFormatter={(v) => `Rp${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(v: number) => formatRupiah(v)} />
                       <LegendWrapper />
                       <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Pendapatan" />
                     </LineChart>
@@ -247,18 +277,17 @@ export default function StatistikPage() {
                 )}
               </div>
 
-              {/* Top Products & Order Status */}
+              {/* Bar & Pie */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Top Products */}
                 <div className="bg-white rounded-lg p-6 shadow">
                   <h2 className="text-xl font-bold mb-4">🏆 Produk Terlaris (Top 10)</h2>
                   {topProductsData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={400}>
                       <BarChart data={topProductsData} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" tickFormatter={(value) => `Rp${(value / 1000).toFixed(0)}k`} />
+                        <XAxis type="number" tickFormatter={(v) => `Rp${(v / 1000).toFixed(0)}k`} />
                         <YAxis dataKey="name" type="category" width={100} />
-                        <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                        <Tooltip formatter={(v: number) => formatRupiah(v)} />
                         <LegendWrapper />
                         <Bar dataKey="revenue" fill="#3b82f6" name="Pendapatan" />
                       </BarChart>
@@ -268,7 +297,6 @@ export default function StatistikPage() {
                   )}
                 </div>
 
-                {/* Order Status */}
                 <div className="bg-white rounded-lg p-6 shadow">
                   <h2 className="text-xl font-bold mb-4">📊 Distribusi Status Order</h2>
                   {orderStatusData.some((d) => d.value > 0) ? (
@@ -284,8 +312,8 @@ export default function StatistikPage() {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {orderStatusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          {orderStatusData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -298,7 +326,7 @@ export default function StatistikPage() {
                 </div>
               </div>
 
-              {/* Product Details Table */}
+              {/* Tabel Produk */}
               <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-bold">📦 Detail Produk Terlaris</h2>
@@ -307,35 +335,25 @@ export default function StatistikPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Produk
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Terjual
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Pendapatan
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pendapatan</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {topProductsData.length > 0 ? (
-                        topProductsData.map((product, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                        topProductsData.map((p, i) => (
+                          <tr key={i} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold mr-3">
-                                  {index + 1}
+                                  {i + 1}
                                 </div>
-                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                <div className="text-sm font-medium text-gray-900">{p.name}</div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {product.quantity} unit
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                              {formatRupiah(product.revenue)}
-                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{p.quantity} unit</td>
+                            <td className="px-6 py-4 text-sm font-medium text-green-600">{formatRupiah(p.revenue)}</td>
                           </tr>
                         ))
                       ) : (

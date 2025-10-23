@@ -1,11 +1,4 @@
 // src/pages/api/checkout.ts
-
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @next/next/no-img-element */
-
 import type { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../../../lib/mongodb'
 import Checkout from '../../../models/Checkout'
@@ -13,11 +6,32 @@ import Payment from '../../../models/Payment'
 import Order from '../../../models/Order'
 import Xendit from 'xendit-node'
 
-// 🧩 Inisialisasi Xendit client dengan secret key dari .env
+// 🧩 Inisialisasi Xendit client
 const xendit = new Xendit({
   secretKey: process.env.XENDIT_SECRET_KEY!,
 })
 const { Invoice } = xendit
+
+// 🔹 Tipe data item dari frontend
+interface CheckoutItem {
+  _id: string
+  name: string
+  category?: string
+  price: number
+  qty?: number
+  imageUrl?: string
+}
+
+// 🔹 Tipe body request
+interface CheckoutRequestBody {
+  items: CheckoutItem[]
+  totalPrice: number
+  email?: string
+  customerName: string
+  customerPhone: string
+  customerEmail?: string
+  notes?: string
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Cegah selain POST
@@ -26,6 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   await dbConnect()
+
   console.log('🔥 BODY dari frontend:', JSON.stringify(req.body, null, 2))
 
   const {
@@ -36,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     customerPhone,
     customerEmail,
     notes,
-  } = req.body
+  } = req.body as CheckoutRequestBody
 
   // 🧠 Validasi input
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -57,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // 🛒 1️⃣ Buat Checkout record
     const checkout = await Checkout.create({
-      items: items.map((item: any) => ({
+      items: items.map((item) => ({
         product: item._id,
         qty: item.qty || 1,
         price: item.price,
@@ -78,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       customerName,
       customerPhone,
       customerEmail: customerEmail || email || '',
-      items: items.map((item: any) => ({
+      items: items.map((item) => ({
         productId: item._id,
         name: item.name,
         category: item.category || '',

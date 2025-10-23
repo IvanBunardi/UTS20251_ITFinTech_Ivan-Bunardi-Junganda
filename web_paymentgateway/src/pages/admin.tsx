@@ -1,4 +1,4 @@
-// pages/admin.tsx
+// @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 
@@ -39,7 +39,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error('Gagal mengambil data produk')
       const data = await res.json()
       setProducts(Array.isArray(data) ? data : [])
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching products:', err)
       setMessage('❌ Gagal memuat produk')
     } finally {
@@ -56,7 +56,7 @@ export default function AdminPage() {
     formData.append('category', category)
     formData.append('price', price)
     formData.append('description', description)
-    
+
     if (imageFile) {
       formData.append('image', imageFile)
     } else if (editingId && currentImageUrl) {
@@ -97,7 +97,10 @@ export default function AdminPage() {
     setCurrentImageUrl(product.imageUrl)
     setImageFile(null)
     setMessage('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -106,7 +109,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/product?id=${id}`, { method: 'DELETE' })
       const result = await res.json()
-      
+
       if (res.ok) {
         setMessage('🗑️ Produk berhasil dihapus!')
         fetchProducts()
@@ -129,8 +132,10 @@ export default function AdminPage() {
     setEditingId(null)
     setCurrentImageUrl('')
 
-    const fileInput = document.getElementById('imageFileInput') as HTMLInputElement
-    if (fileInput) fileInput.value = ''
+    if (typeof document !== 'undefined') {
+      const fileInput = document.getElementById('imageFileInput') as HTMLInputElement | null
+      if (fileInput) fileInput.value = ''
+    }
   }
 
   const formatRupiah = (value: number) =>

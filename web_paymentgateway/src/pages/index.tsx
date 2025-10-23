@@ -1,7 +1,8 @@
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/router'
+import Image from 'next/image'
 
 export default function LandingPage() {
-  const router = useRouter();
+  const router = useRouter()
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600">
@@ -10,9 +11,8 @@ export default function LandingPage() {
 
       {/* Navbar */}
       <header className="flex justify-between items-center py-4 px-8 bg-white/20 backdrop-blur-md shadow-md z-10">
-        <h1 className="text-2xl font-bold text-white drop-shadow-md">
-          XenditPay
-        </h1>
+        <h1 className="text-2xl font-bold text-white drop-shadow-md">XenditPay</h1>
+
         <nav className="flex items-center space-x-6">
           <button
             onClick={() => router.push('/login')}
@@ -36,6 +36,7 @@ export default function LandingPage() {
             Belanja Mudah & Aman <br /> dengan{' '}
             <span className="text-yellow-300">XenditPay</span>
           </h2>
+
           <p className="text-white/90 text-lg max-w-md mb-8">
             Platform e-commerce modern dengan sistem pembayaran terintegrasi.
             Nikmati kemudahan checkout menggunakan Payment Gateway Xendit.
@@ -57,12 +58,15 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Optional Illustration */}
+        {/* Illustration (optimized with next/image) */}
         <div className="flex-1 flex justify-center">
-          <img
+          <Image
             src="https://illustrations.popsy.co/blue/online-shopping.svg"
             alt="E-commerce Illustration"
-            className="w-80 md:w-96 drop-shadow-lg"
+            width={400}
+            height={400}
+            className="drop-shadow-lg"
+            priority
           />
         </div>
       </main>
@@ -72,5 +76,5 @@ export default function LandingPage() {
         © {new Date().getFullYear()} IT IN FINTECH Payment Gateway. All rights reserved.
       </footer>
     </div>
-  );
+  )
 }

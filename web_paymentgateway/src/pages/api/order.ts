@@ -1,15 +1,32 @@
 // src/pages/api/order.ts
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @next/next/no-img-element */
-
 import type { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../../../lib/mongodb'
 import Order from '../../../models/Order'
 
+// 🔹 Interface untuk item dalam order
+interface OrderItem {
+  productId: string
+  name: string
+  category?: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}
+
+// 🔹 Interface untuk request body
+interface OrderRequestBody {
+  customerName: string
+  customerPhone: string
+  customerEmail?: string
+  items: OrderItem[]
+  totalAmount: number
+  paymentMethod?: string
+  notes?: string
+  status?: 'waiting_payment' | 'paid' | 'cancelled'
+}
+
 // 🔢 Fungsi helper untuk membuat nomor order unik
-const generateOrderNumber = () => {
+const generateOrderNumber = (): string => {
   const date = new Date()
   const year = date.getFullYear().toString().slice(-2)
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
@@ -45,9 +62,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         totalAmount,
         paymentMethod,
         notes,
-      } = req.body
+      } = req.body as OrderRequestBody
 
-      // Validasi dasar
+      // 🧠 Validasi dasar
       if (!customerName || !customerPhone || !items || !totalAmount) {
         return res.status(400).json({ error: 'Data tidak lengkap' })
       }
@@ -75,22 +92,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 🪄 PUT (update order)
     if (req.method === 'PUT') {
-      if (!id) return res.status(400).json({ error: 'ID order diperlukan' })
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: 'ID order diperlukan' })
+      }
 
-      const { status, paymentMethod, notes } = req.body
+      const { status, paymentMethod, notes } = req.body as Partial<OrderRequestBody>
 
       // Validasi status yang diizinkan
       if (status && !['waiting_payment', 'paid', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: 'Status tidak valid' })
       }
 
-      const updateData: any = {}
+      const updateData: Partial<OrderRequestBody> = {}
       if (status) updateData.status = status
       if (paymentMethod) updateData.paymentMethod = paymentMethod
       if (notes !== undefined) updateData.notes = notes
 
       const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true })
-
       if (!updatedOrder) return res.status(404).json({ error: 'Order tidak ditemukan' })
 
       return res.status(200).json(updatedOrder)
@@ -98,7 +116,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 🗑️ DELETE (hapus order)
     if (req.method === 'DELETE') {
-      if (!id) return res.status(400).json({ error: 'ID order diperlukan' })
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: 'ID order diperlukan' })
+      }
 
       const deletedOrder = await Order.findByIdAndDelete(id)
       if (!deletedOrder) return res.status(404).json({ error: 'Order tidak ditemukan' })
@@ -106,7 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ message: 'Order berhasil dihapus' })
     }
 
-    // Jika method lain (misalnya PATCH, OPTIONS)
+    // 🚫 Jika method lain (misalnya PATCH, OPTIONS)
     return res.status(405).json({ error: 'Method tidak diizinkan' })
   } catch (error: unknown) {
     if (error instanceof Error) {

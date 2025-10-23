@@ -1,4 +1,4 @@
-// pages/api/product.ts
+// src/pages/api/product.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import formidable, { File } from 'formidable'
 import fs from 'fs'
@@ -6,19 +6,21 @@ import path from 'path'
 import dbConnect from '../../../../lib/mongodb'
 import Product from '../../../../models/Product'
 
-// Nonaktifkan bodyParser untuk formidable
+// 🧩 Nonaktifkan bodyParser bawaan Next.js agar formidable bisa digunakan
 export const config = {
   api: {
     bodyParser: false,
   },
 }
 
-// Helper untuk parse FormData
-const parseForm = (req: NextApiRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
+// 🔹 Helper untuk parse FormData (formidable)
+const parseForm = (
+  req: NextApiRequest
+): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
   return new Promise((resolve, reject) => {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    
-    // Pastikan folder uploads ada
+
+    // Pastikan folder upload tersedia
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
@@ -36,7 +38,7 @@ const parseForm = (req: NextApiRequest): Promise<{ fields: formidable.Fields; fi
   })
 }
 
-// Helper untuk save gambar
+// 🔹 Helper simpan gambar di folder uploads
 const saveImage = (file: File): string => {
   const fileName = `${Date.now()}_${file.originalFilename || 'image'}`
   const newPath = path.join(process.cwd(), 'public', 'uploads', fileName)
@@ -44,7 +46,7 @@ const saveImage = (file: File): string => {
   return `/uploads/${fileName}`
 }
 
-// Helper untuk extract field value
+// 🔹 Helper ambil nilai field dari FormData
 const getFieldValue = (field: string | string[] | undefined): string => {
   if (Array.isArray(field)) return field[0]
   return field || ''
@@ -52,13 +54,12 @@ const getFieldValue = (field: string | string[] | undefined): string => {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect()
-
   const { id } = req.query
 
   try {
     switch (req.method) {
       // ========================================
-      // GET - Ambil semua produk atau by ID
+      // 📦 GET - Ambil semua produk atau berdasarkan ID
       // ========================================
       case 'GET': {
         if (id) {
@@ -67,14 +68,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ error: 'Produk tidak ditemukan' })
           }
           return res.status(200).json(product)
-        } else {
-          const products = await Product.find().sort({ createdAt: -1 })
-          return res.status(200).json(products)
         }
+
+        const products = await Product.find().sort({ createdAt: -1 })
+        return res.status(200).json(products)
       }
 
       // ========================================
-      // POST - Tambah produk baru
+      // 🆕 POST - Tambah produk baru
       // ========================================
       case 'POST': {
         const { fields, files } = await parseForm(req)
@@ -84,19 +85,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const price = getFieldValue(fields.price)
         const description = getFieldValue(fields.description)
 
-        // Validasi
+        // Validasi field wajib
         if (!name || !category || !price || !description) {
           return res.status(400).json({ error: 'Semua field wajib diisi' })
         }
 
-        // Handle gambar
+        // Simpan gambar (jika ada)
         let imageUrl = ''
         if (files.image) {
           const file = Array.isArray(files.image) ? files.image[0] : files.image
           imageUrl = saveImage(file as File)
         }
 
-        // Simpan ke database
+        // Simpan produk ke MongoDB
         const newProduct = await Product.create({
           name,
           category,
@@ -109,10 +110,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // ========================================
-      // PUT - Update produk
+      // ✏️ PUT - Update produk
       // ========================================
       case 'PUT': {
-        if (!id) {
+        if (!id || typeof id !== 'string') {
           return res.status(400).json({ error: 'ID produk diperlukan' })
         }
 
@@ -124,27 +125,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const description = getFieldValue(fields.description)
         const oldImageUrl = getFieldValue(fields.imageUrl)
 
-        // Validasi
         if (!name || !category || !price || !description) {
           return res.status(400).json({ error: 'Semua field wajib diisi' })
         }
 
-        // Handle gambar
+        // Update gambar jika ada file baru
         let imageUrl = oldImageUrl
         if (files.image) {
           const file = Array.isArray(files.image) ? files.image[0] : files.image
           imageUrl = saveImage(file as File)
 
-          // Hapus gambar lama jika ada (opsional)
+          // Hapus gambar lama (opsional)
           if (oldImageUrl && oldImageUrl.startsWith('/uploads/')) {
             const oldPath = path.join(process.cwd(), 'public', oldImageUrl)
-            if (fs.existsSync(oldPath)) {
-              fs.unlinkSync(oldPath)
-            }
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
           }
         }
 
-        // Update database
+        // Update data produk di database
         const updatedProduct = await Product.findByIdAndUpdate(
           id,
           {
@@ -165,10 +163,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // ========================================
-      // DELETE - Hapus produk
+      // ❌ DELETE - Hapus produk
       // ========================================
       case 'DELETE': {
-        if (!id) {
+        if (!id || typeof id !== 'string') {
           return res.status(400).json({ error: 'ID produk diperlukan' })
         }
 
@@ -177,12 +175,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: 'Produk tidak ditemukan' })
         }
 
-        // Hapus gambar dari folder (opsional)
+        // Hapus gambar dari folder (jika ada)
         if (product.imageUrl && product.imageUrl.startsWith('/uploads/')) {
           const imagePath = path.join(process.cwd(), 'public', product.imageUrl)
-          if (fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath)
-          }
+          if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath)
         }
 
         await Product.findByIdAndDelete(id)
@@ -190,13 +186,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // ========================================
+      // 🚫 Default - Method tidak diizinkan
+      // ========================================
       default:
         return res.status(405).json({ error: 'Method tidak diizinkan' })
     }
-  } catch (error: any) {
-    console.error('API Error:', error)
-    return res.status(500).json({ 
-      error: error.message || 'Terjadi kesalahan server'
-    })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('❌ API Error:', error.message)
+      return res.status(500).json({ error: error.message })
+    } else {
+      console.error('❌ Unknown error:', error)
+      return res.status(500).json({ error: 'Terjadi kesalahan server' })
+    }
   }
 }
