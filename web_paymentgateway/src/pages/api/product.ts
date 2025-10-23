@@ -1,6 +1,4 @@
-// pages/api/product.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createRouter } from "next-connect";
 import multer from "multer";
@@ -10,14 +8,14 @@ import dbConnect from "../../../lib/mongodb";
 import Product from "../../../models/Product";
 import type { RequestHandler } from "express";
 
-// Nonaktifkan bodyParser Next.js agar multer bisa jalan
+// 🔧 Nonaktifkan bodyParser agar multer bisa jalan
 export const config = { api: { bodyParser: false } };
 
-// Buat folder uploads jika belum ada
+// 🔧 Pastikan folder upload ada
 const uploadDir = path.join(process.cwd(), "public/uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Setup multer
+// 🔧 Konfigurasi multer
 const storage = multer.diskStorage({
   destination: uploadDir,
   filename: (_req, file, cb) => {
@@ -26,12 +24,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Tipe request dengan file
+// 🔧 Tipe khusus untuk req dengan file
 interface NextApiRequestWithFile extends NextApiRequest {
   file?: Express.Multer.File;
 }
 
-// Wrapper Multer agar compatible dengan strict TS
+// 🔧 Helper untuk jalankan multer di Next.js
 const runMulter = (req: NextApiRequest, res: NextApiResponse, fn: RequestHandler) =>
   new Promise<void>((resolve, reject) => {
     fn(req as any, res as any, (err?: any) => {
@@ -40,9 +38,12 @@ const runMulter = (req: NextApiRequest, res: NextApiResponse, fn: RequestHandler
     });
   });
 
+// 🔧 Buat router next-connect
 const router = createRouter<NextApiRequestWithFile, NextApiResponse>();
 
-// POST → tambah produk
+// ======================================================================
+// 🟢 POST → Tambah Produk
+// ======================================================================
 router.post(async (req, res) => {
   await runMulter(req, res, upload.single("image"));
 
@@ -57,9 +58,7 @@ router.post(async (req, res) => {
     };
 
     if (!name || !category || !price || !description) {
-      return res.status(400).json({
-        error: "name, category, price, description wajib diisi",
-      });
+      return res.status(400).json({ error: "name, category, price, description wajib diisi" });
     }
 
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
@@ -79,11 +78,13 @@ router.post(async (req, res) => {
   }
 });
 
-// GET → ambil semua produk
+// ======================================================================
+// 🟡 GET → Ambil Semua Produk
+// ======================================================================
 router.get(async (_req, res) => {
   try {
     await dbConnect();
-    const products = await Product.find({});
+    const products = await Product.find({}).sort({ createdAt: -1 });
     return res.status(200).json(products);
   } catch (err) {
     console.error("GET /api/product error:", err);
@@ -91,10 +92,75 @@ router.get(async (_req, res) => {
   }
 });
 
-// Default export handler
-export default async function handler(
-  req: NextApiRequestWithFile,
-  res: NextApiResponse
-) {
+// ======================================================================
+// 🔵 PUT → Update Produk (gunakan query id)
+// ======================================================================
+router.put(async (req, res) => {
+  await runMulter(req, res, upload.single("image"));
+
+  try {
+    await dbConnect();
+
+    const { id } = req.query;
+    const { name, category, price, description } = req.body;
+
+    const existing = await Product.findById(id);
+    if (!existing) return res.status(404).json({ error: "Produk tidak ditemukan" });
+
+    // Jika ada file baru → hapus file lama (optional)
+    let imageUrl = existing.imageUrl;
+    if (req.file) {
+      if (existing.imageUrl) {
+        const oldPath = path.join(process.cwd(), "public", existing.imageUrl);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    existing.name = name ?? existing.name;
+    existing.category = category ?? existing.category;
+    existing.price = price ? Number(price) : existing.price;
+    existing.description = description ?? existing.description;
+    existing.imageUrl = imageUrl;
+
+    await existing.save();
+
+    return res.status(200).json(existing);
+  } catch (err) {
+    console.error("PUT /api/product error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ======================================================================
+// 🔴 DELETE → Hapus Produk (gunakan query id)
+// ======================================================================
+router.delete(async (req, res) => {
+  try {
+    await dbConnect();
+    const { id } = req.query;
+
+    const product = await Product.findById(id);
+    if (!product) return res.status(404).json({ error: "Produk tidak ditemukan" });
+
+    // Hapus file gambar dari /public/uploads
+    if (product.imageUrl) {
+      const filePath = path.join(process.cwd(), "public", product.imageUrl);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    await Product.findByIdAndDelete(id);
+
+    return res.status(200).json({ message: "Produk berhasil dihapus" });
+  } catch (err) {
+    console.error("DELETE /api/product error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ======================================================================
+// 🧩 Default export handler
+// ======================================================================
+export default async function handler(req: NextApiRequestWithFile, res: NextApiResponse) {
   await router.run(req, res);
 }

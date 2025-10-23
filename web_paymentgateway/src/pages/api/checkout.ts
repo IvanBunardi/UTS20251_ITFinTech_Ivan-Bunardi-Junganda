@@ -2,11 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '../../../lib/mongodb';
 import Checkout from '../../../models/Checkout';
 import Payment from '../../../models/Payment';
+import Order from '../../../models/Order';
 import Xendit from 'xendit-node';
 
 // Inisialisasi Xendit
 const xendit = new Xendit({ secretKey: process.env.XENDIT_SECRET_KEY! });
-const { Invoice } = xendit; // ✅ langsung ambil API
+const { Invoice } = xendit;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -15,59 +16,113 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   console.log("🔥 BODY dari frontend:", JSON.stringify(req.body, null, 2));
 
-  const { items, totalPrice, email } = req.body;
+  const { 
+    items, 
+    totalPrice, 
+    email, 
+    customerName, 
+    customerPhone,
+    customerEmail,
+    notes 
+  } = req.body;
 
+  // Validasi
   if (!items || items.length === 0 || !totalPrice || isNaN(totalPrice)) {
     return res.status(400).json({ error: 'Items dan totalPrice wajib diisi dengan benar' });
   }
 
-  // Buat checkout
-  const checkout = await Checkout.create({
-    items,
-    totalPrice,
-    status: 'PENDING',
-    externalId: `checkout-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-  });
+  if (!customerName || !customerPhone) {
+    return res.status(400).json({ error: 'Nama dan nomor telepon pelanggan wajib diisi' });
+  }
+
+  const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const externalId = `checkout-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   try {
-    // ✅ Panggil langsung tanpa `new`
+    // 1️⃣ Buat Checkout
+    const checkout = await Checkout.create({
+      items: items.map((item: any) => ({
+        product: item._id,
+        qty: item.qty || 1,
+        price: item.price,
+      })),
+      totalPrice: Math.round(totalPrice),
+      status: 'PENDING',
+      externalId,
+      customerName: customerName,
+      customerEmail: customerEmail || email || 'noemail@example.com',
+      customerWhatsapp: customerPhone,
+    });
+
+    console.log("✅ Checkout created:", checkout._id);
+
+    // 2️⃣ Buat Order untuk Admin Dashboard
+    const order = await Order.create({
+      orderNumber,
+      customerName,
+      customerPhone,
+      customerEmail: customerEmail || email || '',
+      items: items.map((item: any) => ({
+        productId: item._id,
+        name: item.name,
+        category: item.category || '',
+        price: item.price,
+        quantity: item.qty || 1,
+        imageUrl: item.imageUrl || '',
+      })),
+      totalAmount: Math.round(totalPrice),
+      status: 'waiting_payment',
+      notes: notes || '',
+    });
+
+    console.log("✅ Order created:", order._id, order.orderNumber);
+
+    // 3️⃣ Buat Invoice Xendit
     const resp = await Invoice.createInvoice({
-  data: {
-    externalId: checkout.externalId,
-    amount: Number(totalPrice),
-    payerEmail: email || 'customer@example.com',
-    description: `Pembayaran order ${checkout._id}`,
-    successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
-    failureRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/fail`,
-    invoiceDuration: 30 * 60,
-  }
-});
+      data: {
+        externalId,
+        amount: Math.round(totalPrice),
+        payerEmail: email || customerEmail || 'customer@example.com',
+        description: `Pembayaran order ${orderNumber}`,
+        successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success?orderId=${order._id}`,
+        failureRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/fail?orderId=${order._id}`,
+        invoiceDuration: 30 * 60,
+      },
+    });
 
+    console.log("✅ Invoice created:", resp.id);
 
-    console.log("✅ Invoice created:", resp);
-
+    // 4️⃣ Update Checkout dengan Xendit details
     await Checkout.findByIdAndUpdate(checkout._id, {
       xenditInvoiceId: resp.id,
       invoiceUrl: resp.invoiceUrl,
-      status: resp.status || 'PENDING'
+      status: resp.status || 'PENDING',
     });
 
-    await Payment.create({
+    // 5️⃣ Buat Payment record
+    const payment = await Payment.create({
       checkout: checkout._id,
-      amount: totalPrice,
+      order: order._id,
+      amount: Math.round(totalPrice),
       status: resp.status || 'PENDING',
-      xenditId: resp.id
+      xenditId: resp.id,
     });
+
+    console.log("✅ Payment created:", payment._id);
 
     return res.status(201).json({
       invoiceUrl: resp.invoiceUrl,
-      checkoutId: checkout._id
+      checkoutId: checkout._id,
+      orderId: order._id,
+      orderNumber,
     });
   } catch (err: unknown) {
-  if (err instanceof Error) {
-    console.error('❌ Error create invoice:', err.message);
-  } else {
-    console.error('❌ Unknown error:', err);
+    if (err instanceof Error) {
+      console.error('❌ Error create invoice:', err.message);
+      return res.status(500).json({ error: err.message });
+    } else {
+      console.error('❌ Unknown error:', err);
+      return res.status(500).json({ error: 'Unknown error' });
+    }
   }
-}
 }
