@@ -126,7 +126,7 @@ export default function AdminCheckoutPage() {
             ➕ Add Item
           </button>
           <button
-            onClick={() => router.push('/admin/checkout')}
+            onClick={() => router.push('/checkoutlist')}
             className={`px-4 py-2 rounded-lg font-medium transition ${
               currentPath === '/admin/checkout' ? 'bg-blue-700 text-white shadow' : 'text-gray-700 hover:bg-gray-200'
             }`}
@@ -134,7 +134,7 @@ export default function AdminCheckoutPage() {
             🛒 Checkout
           </button>
           <button
-            onClick={() => router.push('/admin/statistik')}
+            onClick={() => router.push('/statistik')}
             className={`px-4 py-2 rounded-lg font-medium transition ${
               currentPath === '/admin/statistik' ? 'bg-blue-700 text-white shadow' : 'text-gray-700 hover:bg-gray-200'
             }`}
