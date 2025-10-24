@@ -1,10 +1,10 @@
-// src/pages/api/checkout.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../../../lib/mongodb'
 import Checkout from '../../../models/Checkout'
 import Payment from '../../../models/Payment'
 import Order from '../../../models/Order'
 import Xendit from 'xendit-node'
+import twilio from 'twilio'
 
 // 🧩 Inisialisasi Xendit client
 const xendit = new Xendit({
@@ -12,7 +12,12 @@ const xendit = new Xendit({
 })
 const { Invoice } = xendit
 
-// 🔹 Tipe data item dari frontend
+// 🧩 Inisialisasi Twilio client
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID!,
+  process.env.TWILIO_AUTH_TOKEN!
+)
+
 interface CheckoutItem {
   _id: string
   name: string
@@ -22,7 +27,6 @@ interface CheckoutItem {
   imageUrl?: string
 }
 
-// 🔹 Tipe body request
 interface CheckoutRequestBody {
   items: CheckoutItem[]
   totalPrice: number
@@ -34,14 +38,11 @@ interface CheckoutRequestBody {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Cegah selain POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' })
   }
 
   await dbConnect()
-
-  console.log('🔥 BODY dari frontend:', JSON.stringify(req.body, null, 2))
 
   const {
     items,
@@ -53,7 +54,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     notes,
   } = req.body as CheckoutRequestBody
 
-  // 🧠 Validasi input
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Items wajib diisi dan harus berupa array.' })
   }
@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const externalId = `checkout-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
   try {
-    // 🛒 1️⃣ Buat Checkout record
+    // 🛒 1️⃣ Simpan Checkout
     const checkout = await Checkout.create({
       items: items.map((item) => ({
         product: item._id,
@@ -85,9 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       customerWhatsapp: customerPhone,
     })
 
-    console.log('✅ Checkout created:', checkout._id)
-
-    // 🧾 2️⃣ Buat Order record untuk dashboard admin
+    // 🧾 2️⃣ Simpan Order
     const order = await Order.create({
       orderNumber,
       customerName,
@@ -106,9 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       notes: notes || '',
     })
 
-    console.log('✅ Order created:', order._id, order.orderNumber)
-
-    // 💳 3️⃣ Buat Invoice di Xendit
+    // 💳 3️⃣ Buat Invoice Xendit
     const resp = await Invoice.createInvoice({
       data: {
         externalId,
@@ -117,21 +113,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         description: `Pembayaran order ${orderNumber}`,
         successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success?orderId=${order._id}`,
         failureRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/fail?orderId=${order._id}`,
-        invoiceDuration: 30 * 60, // 30 menit
+        invoiceDuration: 30 * 60,
       },
     })
 
-    console.log('✅ Invoice created:', resp.id)
-
-    // 🪄 4️⃣ Update data checkout dengan informasi Xendit
+    // 🪄 4️⃣ Update Checkout
     await Checkout.findByIdAndUpdate(checkout._id, {
       xenditInvoiceId: resp.id,
       invoiceUrl: resp.invoiceUrl,
       status: resp.status || 'PENDING',
     })
 
-    // 💰 5️⃣ Simpan Payment record
-    const payment = await Payment.create({
+    // 💰 5️⃣ Simpan Payment
+    await Payment.create({
       checkout: checkout._id,
       order: order._id,
       amount: Math.round(totalPrice),
@@ -139,9 +133,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       xenditId: resp.id,
     })
 
-    console.log('✅ Payment created:', payment._id)
+    // 📲 6️⃣ Kirim WhatsApp lewat Twilio
+    try {
+      const productName =
+        items.length === 1 ? items[0].name : `${items.length} produk dalam keranjang`
+      const productPrice =
+        items.length === 1
+          ? items[0].price.toLocaleString('id-ID')
+          : totalPrice.toLocaleString('id-ID')
 
-    // 🚀 6️⃣ Response sukses ke frontend
+      await client.messages.create({
+        from: 'whatsapp:+14155238886', // Nomor WhatsApp Twilio kamu
+        to: `whatsapp:${customerPhone}`, // Format WA: whatsapp:+628xxx
+        contentSid: 'HX3682bcc4877c01ceb0a8ab24ea7396eb', // Template SID Twilio
+        contentVariables: JSON.stringify({
+          userName: customerName,
+          productName,
+          productPrice,
+          paymentLink: resp.invoiceUrl,
+        }),
+      })
+
+      console.log('✅ WhatsApp notification sent to', customerPhone)
+    } catch (twilioErr) {
+      console.error('⚠️ Gagal kirim WhatsApp:', twilioErr)
+    }
+
+    // 🚀 7️⃣ Response ke frontend
     return res.status(201).json({
       success: true,
       invoiceUrl: resp.invoiceUrl,
@@ -150,7 +168,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       orderNumber,
     })
   } catch (err: unknown) {
-    // 🛠️ Error handling terperinci
     if (err instanceof Error) {
       console.error('❌ Error create invoice:', err.message)
       return res.status(500).json({ error: err.message })
